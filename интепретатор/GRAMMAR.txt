@@ -1,0 +1,51 @@
+PARSE-> program{DESCRIPTIONS OPERATORS}
+
+DESCRIPTIONS->{_[int|string|real]<put_declare_type(cur_type);>DESCRIPTION<check_description(declare_type);>;_}
+
+DESCRIPTION-> VARIABLE{_,VARIABLE_}
+VARIABLE->IDENTIFICATOR
+IDENTIFICATOR-> ident<st_int.push(cur_val)>[=<program.put_lex(Lex(POLIZ_ADDRESS,id.val));>CONSTANT<if (cur_type==LEX_COMMA)||(cur_type==LEX_FIN) program.put_lex(cur_lex)>]
+
+CONSTANT->[+|-][NUMI|NUMR]<проверка совместимости типов; program.put_lex(cur_lex)<if (tl==LEX_PLUS) program.put_lex(Lex(LEX_UNAR_PLUS,tl.get_value));else --||--LEX_UNAR_MINUS>|[NUMR|NUMI|STR]<program.put_lex(cur_lex)>
+
+OPERATORS->{_OPERATOR_}
+OPERATOR-> if (EXPRESSION<program.put_lex(POLIZ_FGO,0);>) OPERATOR <program.put_lex(Lex(POLIZ_GO,0));> else OPERATOR <program.put_lex(Lex(POLIZ_LABEL,pl3),pl1);program.put_lex(Lex(POLIZ_LABEL,pl4),pl2);>|
+
+|while (EXPRESSION<check_condition(); program.put_lex(Lex(POLIZ_FGO,0));>) OPERATOR <progr|am.put_lex(Lex(POLIZ_GO,0)); program.put_lex(Lex(POLIZ_LABEL,pl4),pl2); program.put_lex(Lex(POLIZ_LABEL,pl1),pl3);>|
+
+|read(ident <program.put_lex(Lex(POLIZ_ADDRESS,cur_val));>);<program.put_lex(LEX_READ);>||
+
+|write(EXPRESSION<program.put_lex(LEX_WRITE);>{_,EXPRESSION<program.put_lex(LEX_WRITE)>_});|
+
+{OPERATORS}|
+
+|do OPERATOR while(EXPRESSION<check_condition();pl2=program.blank(); pogram.put_lex(Lex(POLIZ_FGO,0)); pl3=program.blank(); program.put_lex(Lex(POLIZ_GO,0));pl4=program.get_free();program.put_lex(Lex(POLIZ_LABEL,pl4),pl2); 
+program.put_lex(Lex(POLIZ_LABEL,pl1),pl3);>);|
+
+|goto ident<pl=program.blank(); program.put_lex(Lex(POLIZ_GO,0)); TM.copy_mark(cur_lex,pl);>;|
+
+|MARKER <pl=program.get_free(); if ((TM[cur_val].placemark!=pl)&&(TM[cur_val].placemark!=-1)){
+			program.put_lex(Lex(POLIZ_LABEL,pl),TM[cur_val].placemark);
+			TM[cur_val].placemark=pl;
+		}
+else TM[cur_val].placemark=pl; > OPERATOR|
+
+|EXPRESSION <program.put_lex(cur_lex);>
+
+EXPRESSION-> ident <if ( !TID[cur_val].get_declare() throw er; > = <program.put_lex(Lex(POLIZ_ADDRESS,ident.get_value())); st_lex.push(TID[ident.get_value].get_type());> EXPRESSION <check_init(); program.put_lex(LEX_EQ);>|EXOR
+
+EXOR-> EXAND {or <st_lex.push(cur_type); занос номеров позиций и операндов в ПОЛИЗ> EXAND <check_logic();> Расстановка адресов перехода в ПОЛИЗе+ расстановка операндов}
+
+EXAND->EXSIGN {and <st_lex.push(cur_type); program.put_lex(Lex(POLIZ_FGO,0));> EXSIGN <check_logic(); заполнение ПОЛИЗ>}
+
+EXSIGN->EXPM{[<,>,<=,>=,!=,==]<st_lex.push(cur_type);> EXPM <check_sign(); program.put_lex(LEX_SIGN);>}
+
+EXPM-> EXMD {[+,-]<st_lex.push(cur_type);> EXMD <check_op(); program.put_lex(LEX_SIGN);>}
+
+EXMD-> [not|+|-]<if (unar)st_lex.push(cur_type);> EXFIN <if (unar) check_unar_op(); if (unarsign) program.put_lex(LEX_UNAR_SIGN);>
+
+EXFIN-> [STR|NUMI|NUMR] <st_lex.push(LEX_INT|LEX_STRING|LEX_REAL); program.put_lex(--||--)> | IDENT<if (!TID[cur_val].get_declare()) throw err; st_lex.push(TID[cur_val].get_type()); program.put_lex(LEX_ID)>|
+| (EXPRESSION)
+
+
+

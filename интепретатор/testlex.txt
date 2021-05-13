@@ -1,0 +1,14 @@
+program 
+{
+int x=5,y=7;
+real p=8.6;
+if (not(x<p)or not(x) or (y==x)) x=15;
+else {
+	x=10;
+	goto L;
+	}
+write(x);
+goto G;
+L:write("JMP");
+G: write("JMPG",x);
+}
